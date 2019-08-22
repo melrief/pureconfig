@@ -18,8 +18,8 @@ libraryDependencies += "com.github.pureconfig" %% "pureconfig-scalaz" % "0.11.1"
 
 The following `scalaz` data structures are supported:
 
-* `IList`, `ISet`, `Maybe`, `NonEmptyList` and `==>>`
-* `Order[A]` should also be in scope, when you're relying on either `ConfigReader[A ==>> B]` or `ConfigReader[ISet[A]]`.
+* `DList`, `Dequeue`, `IList`, `ISet`, `Heap`, `Maybe`, `NonEmptyList` and `==>>`
+* `Order[A]` should also be in scope, when you're relying on either `ConfigReader[ISet[A]]`, `ConfigReader[Heap[A]]` or `ConfigReader[A ==>> B]`.
 For example, if your `ISet` instance contains `String` values then `Order[String]` can be imported via `scalaz.std.string._`
 
 Here is an usage example:
@@ -29,27 +29,33 @@ import com.typesafe.config.ConfigFactory.parseString
 import pureconfig._
 import pureconfig.generic.auto._
 import pureconfig.module.scalaz._
-import scalaz.{==>>, IList, ISet, Maybe, NonEmptyList}
+import scalaz.{ ==>>, DList, Dequeue, IList, ISet, Heap, Maybe, NonEmptyList }
 import scalaz.std.anyVal.intInstance
 import scalaz.std.string._
 
 case class ScalazConfig(
-  numberLst: IList[Int],
+  numberDlist: DList[Int],
+  numberDequeue: Dequeue[Int],
+  numberIlist: IList[Int],
+  numberHeap: Heap[Int],
   numberSet: ISet[Int],
+  numberMaybe: Maybe[Int],
   numberNel: NonEmptyList[Int],
-  numberMap: String ==>> Int,
-  numberMaybe: Maybe[Int]
+  numberMap: String ==>> Int
 )
 ```
 
 We can read a `ScalazConfig` like:
 ```tut:book
 val scalazConf = parseString("""{
-  number-lst: [1,2,3],
+  number-dlist: [1,2,3],
+  number-dequeue: [1,2,3],
+  number-ilist: [1,2,3],
+  number-heap: [1,2,3],
+  number-maybe: 1,
   number-set: [1,2,3],
   number-nel: [1,2,3],
-  number-map { "one": 1, "two": 2, "three": 3 },
-  number-maybe: 1
+  number-map { "one": 1, "two": 2, "three": 3 }
 }""")
 
 loadConfig[ScalazConfig](scalazConf)
@@ -123,7 +129,7 @@ val myConf = parseString("{}")
 val res = loadConfig[MyConfig](myConf).left.map(_.toNel)
 ```
 
-This allows `scalaz` users to easily convert a result of a `ConfigReader` into a `ValidatedNel`:
+This allows `scalaz` users to easily convert a result of a `ConfigReader` into a `ValidationNel`:
 
 ```tut:silent
 import scalaz.{ Validation, ValidationNel }
