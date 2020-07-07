@@ -2,9 +2,10 @@ package pureconfig
 
 import com.typesafe.config.{ ConfigFactory, ConfigValueFactory, ConfigValueType }
 import pureconfig.error.WrongType
-import pureconfig.generic.error.NoValidCoproductOptionFound
+import pureconfig.generic.error.NoValidEnumOptionFound
 import pureconfig.generic.semiauto._
 import shapeless.test.illTyped
+import pureconfig.error.{ KeyNotFound, ConvertFailure, ConfigReaderFailures }
 
 class EnumerationsSuite extends BaseSuite {
 
@@ -23,7 +24,7 @@ class EnumerationsSuite extends BaseSuite {
     ConfigReader[Color].from(ConfigValueFactory.fromAnyRef("sunny-yellow")) shouldBe Right(SunnyYellow)
 
     val unknownValue = ConfigValueFactory.fromAnyRef("blue")
-    ConfigReader[Color].from(unknownValue) should failWith(NoValidCoproductOptionFound(unknownValue, Seq.empty), "", emptyConfigOrigin)
+    ConfigReader[Color].from(unknownValue) should failWith(NoValidEnumOptionFound(unknownValue, Set("rainy-blue", "sunny-yellow"), "Color"))
     ConfigReader[Color].from(conf.root()) should failWith(WrongType(ConfigValueType.OBJECT, Set(ConfigValueType.STRING)), "", stringConfigOrigin(1))
   }
 

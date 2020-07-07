@@ -2,6 +2,7 @@ package pureconfig.generic
 
 import pureconfig._
 import shapeless._
+import scala.reflect.ClassTag
 
 /**
  * An object that provides methods for deriving `ConfigReader` and `ConfigWriter` instances on demand for value
@@ -12,13 +13,13 @@ object semiauto {
   final def deriveWriter[A](implicit writer: Lazy[DerivedConfigWriter[A]]): ConfigWriter[A] = writer.value
 
   final def deriveConvert[A](implicit reader: Lazy[DerivedConfigReader[A]], writer: Lazy[DerivedConfigWriter[A]]): ConfigConvert[A] =
-    ConfigConvert.fromReaderAndWriter(Derivation.Successful(reader.value), Derivation.Successful(writer.value))
+    ConfigConvert(reader.value, writer.value)
 
   /**
    * Derive a `ConfigReader` for a sealed family of case objects where each type is encoded as the kebab-case
    * representation of the type name.
    */
-  final def deriveEnumerationReader[A](
+  final def deriveEnumerationReader[A: ClassTag](
     implicit
     readerBuilder: Lazy[EnumerationConfigReaderBuilder[A]]): ConfigReader[A] =
     deriveEnumerationReader(ConfigFieldMapping(PascalCase, KebabCase))
@@ -36,7 +37,7 @@ object semiauto {
    * Derive a `ConfigConvert` for a sealed family of case objects where each type is encoded as the kebab-case
    * representation of the type name.
    */
-  final def deriveEnumerationConvert[A](
+  final def deriveEnumerationConvert[A: ClassTag](
     implicit
     readerBuilder: Lazy[EnumerationConfigReaderBuilder[A]],
     writerBuilder: Lazy[EnumerationConfigWriterBuilder[A]]): ConfigConvert[A] =
@@ -48,7 +49,8 @@ object semiauto {
    */
   final def deriveEnumerationReader[A](transformName: String => String)(
     implicit
-    readerBuilder: Lazy[EnumerationConfigReaderBuilder[A]]): ConfigReader[A] = readerBuilder.value.build(transformName)
+    readerBuilder: Lazy[EnumerationConfigReaderBuilder[A]],
+    ct: ClassTag[A]): ConfigReader[A] = readerBuilder.value.build(transformName, Set.empty, ct.runtimeClass.getSimpleName)
 
   /**
    * Derive a `ConfigWriter` for a sealed family of case objects where each type is encoded with the `transformName`
@@ -65,8 +67,9 @@ object semiauto {
   final def deriveEnumerationConvert[A](transformName: String => String)(
     implicit
     readerBuilder: Lazy[EnumerationConfigReaderBuilder[A]],
-    writerBuilder: Lazy[EnumerationConfigWriterBuilder[A]]): ConfigConvert[A] =
-    ConfigConvert.fromReaderAndWriter(
-      Derivation.Successful(readerBuilder.value.build(transformName)),
-      Derivation.Successful(writerBuilder.value.build(transformName)))
+    writerBuilder: Lazy[EnumerationConfigWriterBuilder[A]],
+    ct: ClassTag[A]): ConfigConvert[A] =
+    ConfigConvert(
+      readerBuilder.value.build(transformName, Set.empty, ct.runtimeClass.getSimpleName),
+      writerBuilder.value.build(transformName))
 }
