@@ -4,7 +4,7 @@ name := "pureconfig-scala-xml"
 
 crossScalaVersions := Seq(scala212, scala213)
 
-libraryDependencies ++= Seq("org.scala-lang.modules" %% "scala-xml" % "1.3.0")
+libraryDependencies ++= Seq("org.scala-lang.modules" %% "scala-xml" % "2.0.0")
 
 developers := List(Developer("derekmorr", "Derek Morr", "morr.derek@gmail.com", url("https://github.com/derekmorr")))
 
