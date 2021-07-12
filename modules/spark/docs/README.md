@@ -45,7 +45,7 @@ def sparkSchemaToMySchema(name: String, schema: StructType): MySchema =
   MySchema(name, schema.fields.toList.map { case StructField(n, dt, _, _) => Field(n, dt) })
 ```
 
-Convert custom schema to spark and back to custom schema. Resultant string schema should match original source.
+Convert custom schema to Spark and back to custom schema. Resultant string schema should match original source.
 ```scala mdoc
 val mySchemaRes = ConfigSource.string(
   """name: Employee,
