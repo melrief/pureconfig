@@ -2,7 +2,7 @@ package pureconfig.module
 
 import scala.util.Try
 
-import org.apache.spark.sql.types.{DataType, StructType}
+import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 
 import pureconfig.{ConfigConvert, ConfigReader, ConfigWriter}
 
@@ -17,4 +17,7 @@ package object spark {
 
   implicit val structTypeWriter: ConfigWriter[StructType] =
     dataTypeConvert.contramap(identity)
+
+  implicit val metadataConvert: ConfigConvert[Metadata] =
+    ConfigConvert.viaNonEmptyStringTry[Metadata](s => Try(Metadata.fromJson(s)), _.json)
 }

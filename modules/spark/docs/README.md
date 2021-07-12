@@ -24,6 +24,8 @@ import pureconfig.module.spark._
 
 * `org.apache.spark.sql.types.DataType`
 * `org.apache.spark.sql.types.StructType`
+* `org.apache.spark.sql.types.Metadata`
+* `org.apache.spark.sql.types.StructField` (derivable)
 
 ## Example
 
@@ -35,14 +37,13 @@ import pureconfig._
 import pureconfig.generic.auto._
 import pureconfig.module.spark._
 
-case class MySchema(name: String, fields: List[Field])
-case class Field(name: String, dataType: DataType)
+case class MySchema(name: String, fields: List[StructField], someOtherSetting: Option[String])
 
 def mySchemaToSparkSchema(schema: MySchema): StructType =
-  StructType(schema.fields.map { case Field(n, dt) => StructField(n, dt) })
+  StructType(schema.fields)
 
 def sparkSchemaToMySchema(name: String, schema: StructType): MySchema =
-  MySchema(name, schema.fields.toList.map { case StructField(n, dt, _, _) => Field(n, dt) })
+  MySchema(name, schema.fields.toList, None)
 ```
 
 Convert custom schema to Spark and back to custom schema. Resultant string schema should match original source.
@@ -51,7 +52,7 @@ val mySchemaRes = ConfigSource.string(
   """name: Employee,
     |fields: [
     |  { name: name, data-type: string }, #types are case-insensitive and some types have variations/truncations
-    |  { name: age, data-type: integer },
+    |  { name: age, data-type: integer }, #also note that `nullable` and `metadata` are optional fields with Spark defaults
     |  { name: salary, data-type: "decimal(6,2)" },
     |  { name: address, data-type: "line1 string, line2 string" } #outer `struct` is optional
     |]

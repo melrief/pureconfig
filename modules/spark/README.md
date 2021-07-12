@@ -24,6 +24,8 @@ import pureconfig.module.spark._
 
 * `org.apache.spark.sql.types.DataType`
 * `org.apache.spark.sql.types.StructType`
+* `org.apache.spark.sql.types.Metadata`
+* `org.apache.spark.sql.types.StructField` (derivable)
 
 ## Example
 
@@ -35,23 +37,22 @@ import pureconfig._
 import pureconfig.generic.auto._
 import pureconfig.module.spark._
 
-case class MySchema(name: String, fields: List[Field])
-case class Field(name: String, dataType: DataType)
+case class MySchema(name: String, fields: List[StructField], someOtherSetting: Option[String])
 
 def mySchemaToSparkSchema(schema: MySchema): StructType =
-  StructType(schema.fields.map { case Field(n, dt) => StructField(n, dt) })
+  StructType(schema.fields)
 
 def sparkSchemaToMySchema(name: String, schema: StructType): MySchema =
-  MySchema(name, schema.fields.toList.map { case StructField(n, dt, _, _) => Field(n, dt) })
+  MySchema(name, schema.fields.toList, None)
 ```
 
-Convert custom schema to spark and back to custom schema. Resultant string schema should match original source.
+Convert custom schema to Spark and back to custom schema. Resultant string schema should match original source.
 ```scala
 val mySchemaRes = ConfigSource.string(
   """name: Employee,
     |fields: [
     |  { name: name, data-type: string }, #types are case-insensitive and some types have variations/truncations
-    |  { name: age, data-type: integer },
+    |  { name: age, data-type: integer }, #also note that `nullable` and `metadata` are optional fields with Spark defaults
     |  { name: salary, data-type: "decimal(6,2)" },
     |  { name: address, data-type: "line1 string, line2 string" } #outer `struct` is optional
     |]
@@ -60,17 +61,20 @@ val mySchemaRes = ConfigSource.string(
 //   MySchema(
 //     "Employee",
 //     List(
-//       Field("name", StringType),
-//       Field("age", IntegerType),
-//       Field("salary", DecimalType(6, 2)),
-//       Field(
+//       StructField("name", StringType, true, {}),
+//       StructField("age", IntegerType, true, {}),
+//       StructField("salary", DecimalType(6, 2), true, {}),
+//       StructField(
 //         "address",
 //         StructType(
 //           StructField("line1", StringType, true, {}),
 //           StructField("line2", StringType, true, {})
-//         )
+//         ),
+//         true,
+//         {}
 //       )
-//     )
+//     ),
+//     None
 //   )
 // )
 
@@ -101,23 +105,26 @@ val mySchemaRes2 =
 //   MySchema(
 //     "Employee",
 //     List(
-//       Field("name", StringType),
-//       Field("age", IntegerType),
-//       Field("salary", DecimalType(6, 2)),
-//       Field(
+//       StructField("name", StringType, true, {}),
+//       StructField("age", IntegerType, true, {}),
+//       StructField("salary", DecimalType(6, 2), true, {}),
+//       StructField(
 //         "address",
 //         StructType(
 //           StructField("line1", StringType, true, {}),
 //           StructField("line2", StringType, true, {})
-//         )
+//         ),
+//         true,
+//         {}
 //       )
-//     )
+//     ),
+//     None
 //   )
 // )
 
 val stringSchemaRes = mySchemaRes2.map(ConfigWriter[MySchema].to)
 // stringSchemaRes: Either[error.ConfigReaderFailures, com.typesafe.config.ConfigValue] = Right(
-//   SimpleConfigObject({"fields":[{"data-type":"STRING","name":"name"},{"data-type":"INT","name":"age"},{"data-type":"DECIMAL(6,2)","name":"salary"},{"data-type":"STRUCT<`line1`: STRING, `line2`: STRING>","name":"address"}],"name":"Employee"})
+//   SimpleConfigObject({"fields":[{"data-type":"STRING","metadata":"{}","name":"name","nullable":true},{"data-type":"INT","metadata":"{}","name":"age","nullable":true},{"data-type":"DECIMAL(6,2)","metadata":"{}","name":"salary","nullable":true},{"data-type":"STRUCT<`line1`: STRING, `line2`: STRING>","metadata":"{}","name":"address","nullable":true}],"name":"Employee"})
 // )
 ```
 
